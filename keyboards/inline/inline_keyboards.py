@@ -1,15 +1,43 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from telebot import types
+from loguru import logger
+from typing import Optional
 
 
-def city_markup(found_cities):
+@logger.catch()
+def city_markup(found_cities) -> Optional[InlineKeyboardMarkup]:
+    """
+    Функция по созданию клавиатуры в телеграм боте. Итерируемся по ключу destination_id и добавляем кнопки
+
+    :param found_cities: список словарей с нужным именем и id
+    :rtype: list
+    :return: destinations
+    :rtype: InlineKeyboardMarkup, None
+    """
+
     destinations = InlineKeyboardMarkup()
+    lst = []
     for city in found_cities:
-        destinations.add(InlineKeyboardButton(text=city['city_name'], callback_data=f'{city["destination_id"]}'))
-    return destinations
+        try:
+            lst.append(city["destination_id"])
+            destinations.add(InlineKeyboardButton(text=city['city_name'], callback_data=f'{city["destination_id"]}'))
+        except KeyError as scx:
+            logger.error(scx)
+    if len(lst) >= 1:
+        return destinations
+    else:
+        return None
 
 
-def keyboards():
+@logger.catch()
+def keyboard_for_id() -> InlineKeyboardMarkup:
+    """
+    Функция по созданию клавиатуры в телеграм боте
+
+    :return: key_board
+    :rtype: InlineKeyboardMarkup
+    """
+
     key_board = InlineKeyboardMarkup()
     key_yes = types.InlineKeyboardButton(text='Да', callback_data='Да')
     key_board.add(key_yes)
