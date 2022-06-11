@@ -3,10 +3,11 @@ from loader import bot
 from telebot.types import Message
 from rapid_api.find_hotels import *
 from states.state_information import User
+from datetime import date, datetime, timedelta
 import datetime
 from config_data import config
 from keyboards.inline.inline_keyboards import *
-from telegram_bot_calendar import DetailedTelegramCalendar
+from MyCalendar.CalendarBot import MyCustomCalendar
 
 
 @bot.message_handler(commands=['highprice', 'lowprice', 'bestdeal'])
@@ -153,6 +154,8 @@ def ready_photo(message: Message) -> None:
 @bot.callback_query_handler(func=lambda call: call.data == 'Да')
 def hotels_with_photos(call) -> None:
     bot.answer_callback_query(callback_query_id=call.id, text='Спасибо за выбор!')
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+    bot.delete_message(call.message.chat.id, call.message.message_id)
     bot.send_message(call.message.chat.id, 'Сколько фото Вам вывести (Не более 5)?')
     bot.register_next_step_handler(call.message, ready_photo)
 
@@ -165,6 +168,8 @@ def hotels_without_photos(call) -> None:
     bot.answer_callback_query(callback_query_id=call.id, text='Спасибо за выбор!')
     bot.send_message(call.message.chat.id, 'Подождите пожалуйcта, идет обработка результата &#9203', parse_mode='HTML')
     search_hotels = SearchObject(search_hotel(User.dct[call.message.chat.id].call_data), config.search_list)
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
+    bot.delete_message(call.message.chat.id, call.message.message_id)
     if User.dct[call.message.chat.id].command == '/lowprice':
         text_hotels = ''
         for no_photo1 in text_transformation(property_founding(search_hotels.request_to_api(),
@@ -205,34 +210,40 @@ def question_date(call) -> None:
     далее запрашиваем желаемую дату въезда в отель с помошью календаря
     """
     bot.answer_callback_query(callback_query_id=call.id, text='Спасибо за выбор!')
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id)
     User.dct[call.message.chat.id].call_data = call.data
-    calendar, step = DetailedTelegramCalendar(calendar_id='entry', locale='ru').build()
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    calendar, step = MyCustomCalendar(calendar_id='entry', current_date=date.today(), min_date=date.today(),
+                                      max_date=date.today() + timedelta(days=365), locale='ru').build()
     bot.send_message(call.message.chat.id, f"Выберите желаемую дату въезда", reply_markup=calendar)
 
 
-@bot.callback_query_handler(func=DetailedTelegramCalendar.func(calendar_id='entry'))
+@bot.callback_query_handler(func=MyCustomCalendar.func(calendar_id='entry'))
 def date_entry(call) -> None:
     """
     Тут происходит взаимодействие с календарем, так же записываем в словарь дату въезда из отеля
     """
-    result, key, step = DetailedTelegramCalendar(calendar_id='entry', locale='ru').process(call.data)
+    result, key, step = MyCustomCalendar(calendar_id='entry', current_date=date.today(), min_date=date.today(),
+                                         max_date=date.today() + timedelta(days=365), locale='ru').process(call.data)
     if not result and key:
         bot.edit_message_text(f"Выберите желаемую дату въезда",
                               call.message.chat.id, call.message.message_id, reply_markup=key)
     elif result:
         bot.edit_message_text(f"Ваша дата въезда {result}", call.message.chat.id, call.message.message_id)
         User.dct[call.message.chat.id].check_in = str(result)
-        calendar, step = DetailedTelegramCalendar(calendar_id='exit', locale='ru').build()
+        calendar, step = MyCustomCalendar(calendar_id='exit', current_date=date.today(), min_date=date.today(),
+                                          max_date=date.today() + timedelta(days=365), locale='ru').build()
         bot.send_message(call.message.chat.id, f"Выберите желаемую дату выезда", reply_markup=calendar)
 
 
-@bot.callback_query_handler(func=DetailedTelegramCalendar.func(calendar_id='exit'))
+@bot.callback_query_handler(func=MyCustomCalendar.func(calendar_id='exit'))
 def departure_date(call) -> None:
     """
     Здесь происходит взаимодействие с календарем, так же записываем в словарь дату выезда из отеля и после, в
     зависимости от команды пользователя задаем вопрос для прохождения дальнейшего сценария
     """
-    result, key, step = DetailedTelegramCalendar(calendar_id='exit', locale='ru').process(call.data)
+    result, key, step = MyCustomCalendar(calendar_id='exit', current_date=date.today(), min_date=date.today(),
+                                         max_date=date.today() + timedelta(days=365), locale='ru').process(call.data)
     if not result and key:
         bot.edit_message_text(f"Выберите желаемую дату выезда",
                               call.message.chat.id, call.message.message_id, reply_markup=key)
