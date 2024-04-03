@@ -1,4 +1,4 @@
-from peewee import *
+from peewee import Model, SqliteDatabase, CharField
 from typing import Optional
 
 
@@ -36,7 +36,10 @@ def date_base(ph: int, mess1: Optional[int], txt: str, bot, mess2: object) -> No
         with db:
             dct_history[mess1].hotels = txt
             dct_history[mess1].save()
-        bot(mess2, 'Отели успешно найдены! Чтобы вернуться в меню нажмите &#10145 /help', parse_mode='HTML')
+        bot(
+            mess2,
+            'Отели успешно найдены! Чтобы вернуться в меню нажмите &#10145 /help', parse_mode='HTML'
+        )
 
 
 dct_history = dict()

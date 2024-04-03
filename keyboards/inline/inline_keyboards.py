@@ -7,7 +7,8 @@ from typing import Optional
 @logger.catch()
 def city_markup(found_cities) -> Optional[InlineKeyboardMarkup]:
     """
-    Функция по созданию клавиатуры в телеграм боте. Итерируемся по ключу destination_id и добавляем кнопки
+    Функция по созданию клавиатуры в телеграм боте. Итерируемся
+    по ключу destination_id и добавляем кнопки
 
     :param found_cities: список словарей с нужным именем и id
     :rtype: list
@@ -20,7 +21,10 @@ def city_markup(found_cities) -> Optional[InlineKeyboardMarkup]:
     for city in found_cities:
         try:
             lst.append(city["destination_id"])
-            destinations.add(InlineKeyboardButton(text=city['city_name'], callback_data=f'{city["destination_id"]}'))
+            destinations.add(InlineKeyboardButton(
+                text=city['city_name'],
+                callback_data=f'{city["destination_id"]}')
+            )
         except KeyError as scx:
             logger.error(scx)
     if len(lst) >= 1:

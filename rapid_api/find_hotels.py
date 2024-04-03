@@ -14,22 +14,32 @@ class SearchObject:
     Класс по обработке запроса к API
 
     Args:
-        querystring (str): словарь с параментрами необходимыми для поиска нужно информации в эндпоинте
+        querystring (str): словарь с параментрами необходимыми
+        для поиска нужно информации в эндпоинте
         url (str): передается конкретный эндпоинт rapidapi
     """
 
     def __init__(self, querystring: str, url: str) -> None:
         self.url = url
         self.querystring = querystring
-        self.headers = {"X-RapidAPI-Host": "hotels4.p.rapidapi.com",
-                        "X-RapidAPI-Key": config.RAPID_API_KEY}
+        self.headers = {
+            "X-RapidAPI-Host": "hotels4.p.rapidapi.com",
+            "X-RapidAPI-Key": config.RAPID_API_KEY
+        }
 
     def request_to_api(self) -> Optional[str]:
-        """ Метод запроса к API. Прежде чем десереализовать ответ в объект, обязательно
-         происходит проверка на статус код """
+        """
+        Метод запроса к API. Прежде чем десереализовать ответ
+        в объект, обязательно происходит проверка на статус код
+        """
 
         try:
-            response = requests.get(self.url, headers=self.headers, params=self.querystring, timeout=10)
+            response = requests.get(
+                self.url,
+                headers=self.headers,
+                params=self.querystring,
+                timeout=10
+            )
             if response.status_code == requests.codes.ok:
                 return response.text
         except requests.exceptions.ConnectTimeout as scx:
@@ -61,9 +71,14 @@ def search_hotel(id_hotel: str) -> Union[dict, str]:
     :rtype: dict
     """
 
-    return {"destinationId": id_hotel, "pageNumber": "1", "pageSize": "25", "checkIn": "2020-01-08",
-            "checkOut": "2020-01-15", "adults1": "1", "sortOrder":
-                "PRICE", "locale": "ru_RU", "currency": "RUB"}
+    return {
+        "destinationId": id_hotel,
+        "pageNumber": "1",
+        "pageSize": "25",
+        "checkIn": "2020-01-08",
+        "checkOut": "2020-01-15",
+        "adults1": "1",
+        "sortOrder": "PRICE", "locale": "ru_RU", "currency": "RUB"}
 
 
 @logger.catch()
@@ -81,12 +96,22 @@ def search_photo(id_photo: str) -> Union[dict, str]:
 
 
 @logger.catch()
-def property_founding(request: str, checkin: str, checkout: str, need_hotel: int,
-                      need_photo=5, price_r=None, distance_c=None, sort_price=True) -> list:
+def property_founding(
+        request: str,
+        checkin: str,
+        checkout: str,
+        need_hotel: int,
+        need_photo=5,
+        price_r=None,
+        distance_c=None,
+        sort_price=True
+) -> list:
     """
-    Основная функция поиска отелей. Делаем проверку в тексте ответа регулярным выражением, а затем подгружаем json.
-    Далее итерируемся по ключу results и добавляем в список нужную информацию по отелям и после сортируем получившийся
-    результат по стоимости за ночь от большего к меньшему или наоборот в зависимости от команды, который ввел
+    Основная функция поиска отелей. Делаем проверку в тексте ответа
+    регулярным выражением, а затем подгружаем json. Далее
+    по ключу results и добавляем в список нужную информацию по отелям
+    и после сортируем получившийсярезультат по стоимости за ночь от
+    большего к меньшему или наоборот в зависимости от команды, который ввел
     пользователь в телеграм боте
 
     :param request: запрос API
@@ -121,24 +146,35 @@ def property_founding(request: str, checkin: str, checkout: str, need_hotel: int
                 price_change = int((i["ratePlan"]["price"]["current"].replace(',', ''))[:-3])
                 checkin_list = checkin.split('-')
                 checkout_list = checkout.split('-')
-                datetime_checkin = datetime.date(int(checkin_list[0]), int(checkin_list[1]), int(checkin_list[2]))
-                datetime_checkout = datetime.date(int(checkout_list[0]), int(checkout_list[1]), int(checkout_list[2]))
+                datetime_checkin = datetime.date(
+                    int(checkin_list[0]),
+                    int(checkin_list[1]),
+                    int(checkin_list[2])
+                )
+                datetime_checkout = datetime.date(
+                    int(checkout_list[0]),
+                    int(checkout_list[1]),
+                    int(checkout_list[2])
+                )
                 calculating_date = str(abs(datetime_checkin - datetime_checkout))
                 days = calculating_date.split()[0]
                 sum_count = str(price_change * int(days))
-                found_path = {'Отель': i["name"], 'Адрес': i["address"]["streetAddress"],
-                              'Стоимость за ночь': f'{price_change} RUB',
-                              f'Стоимость за весь период проживания': f'{sum_count} RUB',
-                              'До центра города': i['landmarks'][0]['distance'],
-                              'Страница отеля': f'https://www.hotels.com/ho{i["id"]}',
-                              'Фото': photo_founding(search_photos.request_to_api(), need_photo)}
+                found_path = {
+                    'Отель': i["name"],
+                    'Адрес': i["address"]["streetAddress"],
+                    'Стоимость за ночь': f'{price_change} RUB',
+                    f'Стоимость за весь период проживания': f'{sum_count} RUB',
+                    'До центра города': i['landmarks'][0]['distance'],
+                    'Страница отеля': f'https://www.hotels.com/ho{i["id"]}',
+                    'Фото': photo_founding(search_photos.request_to_api(), need_photo)
+                }
                 if price_r is None and distance_c is None:
                     hotels.append(found_path)
                     count += 1
                 else:
-                    if int(price_r[0]) <= price_change <= int(price_r[1]) and \
-                            float(distance_c[0]) <= float((i['landmarks'][0]['distance'].replace(',', '.'))[:-2]) <= \
-                            float(distance_c[1]):
+                    check_price = int(price_r[0]) <= price_change <= int(price_r[1])
+                    float_distance = float((i['landmarks'][0]['distance'].replace(',', '.'))[:-2])
+                    if check_price and float_distance <= float(distance_c[1]):
                         hotels.append(found_path)
                         count += 1
                     else:
@@ -150,11 +186,13 @@ def property_founding(request: str, checkin: str, checkout: str, need_hotel: int
                     if sort_price is False:
                         hotels.sort(
                             key=lambda x: int(x['Стоимость за ночь'][:-6].replace(',', '')),
-                            reverse=True)
+                            reverse=True
+                        )
                     else:
                         hotels.sort(
                             key=lambda x: int(x['Стоимость за ночь'][:-6].replace(',', '')),
-                            reverse=False)
+                            reverse=False
+                        )
                     break
                 else:
                     break
@@ -165,8 +203,9 @@ def property_founding(request: str, checkin: str, checkout: str, need_hotel: int
 @logger.catch()
 def text_transformation(text: list, flag=True) -> Optional[Iterable]:
     """
-    Генератор для конечного выведения информации по отелям. Если в пераметр text передается пустой список,
-    выводим информацию о том, что отели не были найдены, если же список не пустой, то итерируемся по нему выводя
+    Генератор для конечного выведения информации по отелям. Если в пераметр
+    text передается пустой список, выводим информацию о том, что отели не
+    были найдены, если же список не пустой, то итерируемся по нему выводя
     готовые данные по отелям с фото или без, в зависимости от параметра flag
 
     :param text: нужная сортировка по стоимости отелей
@@ -176,7 +215,9 @@ def text_transformation(text: list, flag=True) -> Optional[Iterable]:
     """
 
     if len(text) == 0:
-        yield ['По вашему запросу отели не были найдены, чтобы вернуться в меню нажмите &#10145 /help', '.', '.', '.']
+        yield [
+            'По вашему запросу отели не были найдены, чтобы'
+            'вернуться в меню нажмите &#10145 /help', '.', '.', '.']
     else:
         text_ready = ''
         count = len(text)
@@ -197,8 +238,9 @@ def text_transformation(text: list, flag=True) -> Optional[Iterable]:
 @logger.catch()
 def photo_founding(request: Optional[str], count_photo: int) -> Optional[list]:
     """
-    Функция по поиску фото отелей. Делаем проверку в тексте ответа регулярным выражением, а затем подгружаем json.
-    Далее итерируемся по ключу hotelImages и добавляем в список фотографии отелей
+    Функция по поиску фото отелей. Делаем проверку в тексте ответа регулярным
+    выражением, а затем подгружаем json. Далее итерируемся по ключу hotelImages
+    и добавляем в список фотографии отелей
 
     :param request: запрос API
     :rtype: str, None
@@ -230,8 +272,9 @@ def photo_founding(request: Optional[str], count_photo: int) -> Optional[list]:
 @logger.catch()
 def city_founding(request: Optional[str]) -> Optional[list]:
     """
-    Функция по уточнению местоположения отеля. Делаем проверку в тексте ответа регулярным выражением, а затем
-    подгружаем json. Далее итерируемся по ключу entities и добавляем в список местоположения, так же пропускаем
+    Функция по уточнению местоположения отеля. Делаем проверку в тексте
+    ответа регулярным выражением, а затем подгружаем json. Далее итерируемся
+    по ключу entities и добавляем в список местоположения, так же пропускаем
     дублируюшие названия используя при этом дополнительный список, добовляя туда повторы
 
     :param request: запрос API
